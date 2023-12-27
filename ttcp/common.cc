@@ -1,5 +1,7 @@
 #include "common.h"
 
+#include <assert.h>
+#include <netdb.h>
 #include <getopt.h>
 #include <glog/logging.h>
 
@@ -79,4 +81,68 @@ bool ParseCommand(int argc, char * const argv[], Options& opt) {
   }
 
   return true;
+}
+
+// parse host and make a sockaddr_in
+struct sockaddr_in ResolveOrDie(const char* host, uint16_t port) {
+  struct hostent* he = ::gethostbyname(host);
+  if (!he) {
+    LOG(ERROR) << "Failed to parse host: " << host;
+    perror("gethostbyname");
+    exit(1);
+  }
+  assert(he->h_addrtype == AF_INET && he->h_length == sizeof(uint32_t));
+
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+
+  addr.sin_family = AF_INET;
+  addr.sin_port = htons(port);
+  addr.sin_addr = *reinterpret_cast<struct in_addr*>(he->h_addr);
+  return addr;
+}
+
+// return TCP connected socket-id 
+int AcceptOrDie(uint16_t port) {
+  int listen_fd = ::socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+  if (listen_fd < 0) {
+    LOG(ERROR) << "AcceptOrDie: listen_fd is invalid";
+    perror("socket");
+    exit(1);
+  }
+  
+  int yes = 1;
+  if (::setsockopt(listen_fd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(yes))) {
+    LOG(ERROR) << "Failed to set listen_fd option";
+    perror("setsockopt");
+    ::close(listen_fd);
+    exit(1);
+  }
+
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_port = ::htons(port);
+  addr.sin_addr.s_addr = INADDR_ANY;
+
+  if (::bind(listen_fd, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr))) {
+    LOG(ERROR) << "Failed to bind listen_fd";
+    perror("bind");
+    ::close(listen_fd);
+    exit(1);
+  }
+
+  struct sockaddr_in peer_addr;
+  memset(&peer_addr, 0, sizeof(peer_addr));
+  socklen_t addr_len = 0;
+  int peer_fd = ::accept(listen_fd, reinterpret_cast<struct sockaddr*>(&peer_addr), &addr_len);
+  if (peer_fd < 0) {
+    LOG(ERROR) << "Failed to 'accept' peer_fd";
+    perror("accept");
+    ::close(listen_fd);
+    exit(1);
+  }
+
+  ::close(listen_fd);
+  return peer_fd;
 }

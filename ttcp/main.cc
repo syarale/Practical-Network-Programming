@@ -13,20 +13,18 @@ int main(int argc, char* argv[]) {
   
   if (ParseCommand(argc, argv, opt)) {
     if (opt.transmit) {
-      LOG(INFO) << "Transmit is true, " << opt.host;
+      LOG(INFO) << "Start ttcp-client ...";
+      Transmit(opt);
     } else if (opt.receive) {
-      LOG(INFO) << "Receive is true";
+      LOG(INFO) << "Start ttcp-server ...";
+      Receive(opt);
     } else {
       assert(0);
     }
   } else {
-    LOG(ERROR) << "Failed to Parse";
+    LOG(ERROR) << "Failed to Parse parameter, exit later.";
     return 0;
   }
-
-  LOG(WARNING) << "port: " << opt.port << "\n"
-            << "length: " << opt.length << "\n"
-            << "number: " << opt.number << "\n";
 
   google::ShutdownGoogleLogging();
   return 0;

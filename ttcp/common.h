@@ -20,8 +20,24 @@ struct Options {
   }
 };
 
-bool ParseCommand(int argc , char * const argv[], Options& opt);
+struct SessionMessage {
+  uint32_t number;
+  uint32_t length;
+} __attribute__((__packed__));
 
+struct PayloadMessage {
+  uint32_t length;
+  char data[0];  // Flexible Array Member，FAM
+};
+
+ 
+bool ParseCommand(int argc , char * const argv[], Options& opt);
+struct sockaddr_in ResolveOrDie(const char* host, uint16_t port);
+int AcceptOrDie(uint16_t port);
+
+// implemented in ttcp_blocking.cc 
+void Transmit(const Options& opt);
+void Receive(const Options& opt);
 
 
 #endif  // TTCP_COMMON_H_

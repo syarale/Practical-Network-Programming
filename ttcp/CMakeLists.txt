@@ -5,5 +5,5 @@ set(CMAKE_CXX_STANDARD 11)
 
 find_package(glog REQUIRED)
 
-add_executable(ttcp main.cc common.cc)
+add_executable(ttcp main.cc common.cc ttcp_blocking.cc)
 target_link_libraries(ttcp PRIVATE glog::glog)
