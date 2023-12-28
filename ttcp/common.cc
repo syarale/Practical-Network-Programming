@@ -131,10 +131,16 @@ int AcceptOrDie(uint16_t port) {
     ::close(listen_fd);
     exit(1);
   }
+  if (listen(listen_fd, 5)) {
+    LOG(ERROR) << "Failed to listen.";
+    perror("listen");
+    exit(1);
+  }
 
   struct sockaddr_in peer_addr;
   memset(&peer_addr, 0, sizeof(peer_addr));
   socklen_t addr_len = 0;
+  LOG(INFO) << "Waiting client connection...";
   int peer_fd = ::accept(listen_fd, reinterpret_cast<struct sockaddr*>(&peer_addr), &addr_len);
   if (peer_fd < 0) {
     LOG(ERROR) << "Failed to 'accept' peer_fd";
